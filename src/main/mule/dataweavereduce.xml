@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c204facd-64b8-4604-9017-1f00ddf7c238" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="dataweavereduceFlow" doc:id="12d2124c-c064-4c9e-a60e-ebd98e00863d" >
+		<http:listener doc:name="Listener" doc:id="414e946b-d909-4ac4-98f8-5b71266f7249" config-ref="HTTP_Listener_config" path="/reduce"/>
+		<ee:transform doc:name="Reduce Sum" doc:id="60bcee5b-f919-4ef9-a09d-9cb1776cb47f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+fun sum(item:Number,acc:Number) = item + acc
+---
+	 
+//	 reduce([3,5,7],(item, acc)->sum(item, acc))
+
+	 [5,8] reduce $ + $$]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Reduce Printing Values" doc:id="b20d3309-d99c-48a1-8a48-7c8445801e97" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var widgetCount = 
+[	
+	{
+		"Name" : "Private",
+		"Count" : 100
+	},
+	{
+		"Name" : "Public",
+		"Count" : 200
+	}
+]
+---
+
+	widgetCount reduce (item, acc = {}) -> acc ++ {(item.Name) : item.Count} ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Reduce Prints Total Price" doc:id="3c075f74-80cc-4f3e-8679-d5b50fe09da5" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="mapReducefun" ><![CDATA[%dw 2.0
+output application/json
+var orders = 
+	{
+		Orders : [
+				{
+					"FirstName" : "Mayur",
+					"Total" : "",
+					"Items" : 
+						[
+							{
+								"Income" : "30000"
+							},
+							{
+								"Income" : "40000"
+							}
+						]
+				},
+				{
+					"FirstName" : "Mayur",
+					"Total" : "",
+					"Items" : 
+						[
+							{
+								"Income" : "30000"
+							},
+							{
+								"Income" : "40000"
+							}
+						]
+				}		
+		]
+	}
+---
+
+	//orders.Orders[0].Items reduce(item, acc=0) -> acc + item.Income
+	
+	(orders.Orders map(object, index) -> object.Items reduce(item, acc=0) -> acc + item.Income) reduce $ + $$]]></ee:set-variable>
+				<ee:set-variable variableName="reduceIncomeSum" ><![CDATA[%dw 2.0
+output application/json
+var orders = 
+	{
+		Orders : [
+				{
+					"FirstName" : "Mayur",
+					"Total" : "",
+					"Items" : 
+						[
+							{
+								"Income" : "30000"
+							},
+							{
+								"Income" : "40000"
+							}
+						]
+				}		
+		]
+	}
+---
+
+	orders.Orders[0].Items reduce(item, acc=0) -> acc + item.Income
+	
+	//(orders.Orders map(object, index) -> object.Items reduce(item, acc=0) -> acc + item.Income) reduce $ + $$]]></ee:set-variable>
+				<ee:set-variable variableName="mapReduceSingleEntry" ><![CDATA[%dw 2.0
+output application/json
+var orders = 
+	{
+		Orders : [
+				{
+					"FirstName" : "Mayur",
+					"Total" : "",
+					"Items" : 
+						[
+							{
+								"Income" : "30000"
+							},
+							{
+								"Income" : "40000"
+							}
+						]
+				},
+				{
+					"FirstName" : "Mayur",
+					"Total" : "",
+					"Items" : 
+						[
+							{
+								"Income" : "30000"
+							},
+							{
+								"Income" : "40000"
+							}
+						]
+				}		
+		]
+	}
+---
+
+	//orders.Orders[0].Items reduce(item, acc=0) -> acc + item.Income
+	
+	orders.Orders map(object, index) -> object.Items reduce(item, acc=0) -> acc + item.Income]]></ee:set-variable>
+				<ee:set-variable variableName="printTotalValue" ><![CDATA[%dw 2.0
+output application/json
+var orders = 
+	{
+		Orders : [
+				{
+					"FirstName" : "Mayur",
+					"Total" : "",
+					"Items" : 
+						[
+							{
+								"Income" : "300000"
+							},
+							{
+								"Income" : "400000"
+							}
+						]
+				}		
+		]
+	}
+---
+
+	//orders.Orders[0].Items reduce(item, acc=0) -> acc + item.Income
+	
+	//orders.Orders map(object, index) -> object.Items reduce(item, acc=0) -> acc + item.Income
+	
+	"Orders" : orders.Orders map(object, index) ->
+	(
+		object mapObject(value, key, objIndex) ->
+		(
+			if((key) as String == 'Total')
+				'Total' : orders.Orders[index].Items reduce (item, acc=0) -> acc + item.Income
+			else
+				(key) : value
+		)
+	)
+	]]></ee:set-variable>
+				<ee:set-variable variableName="complexReduceArray" ><![CDATA[%dw 2.0
+output application/json
+var location = {"MayurMumbai7718070709" : "100", "MayurMumbai7718070700" : "1000"}
+var locationMapping = ['FirstName', 'Location', 'ContactNumber']
+
+fun getUniqueID(headres, lines) = locationMapping reduce(item, acc='') -> acc ++
+	(if(item as String == 'FirstName')
+		headres.FirstName
+	else
+		lines[item]		
+	)
+
+var orders = 
+	{
+		Orders : [
+				{
+					"FirstName" : "Mayur",
+					"Location" : "Mumbai",
+					"Total" : "",
+					"Items" : 
+						[
+							{
+								"Income" : "300000",
+								"ContactNumber" : "7718070709",
+								"UniqueID" : ""
+							},
+							{
+								"Income" : "400000",
+								"ContactNumber" : "7718070700",
+								"UniqueID" : ""
+							}
+						]
+				}		
+		]
+	}
+---
+
+	//orders.Orders[0].Items reduce(item, acc=0) -> acc + item.Income
+	
+	//orders.Orders map(object, index) -> object.Items reduce(item, acc=0) -> acc + item.Income
+{
+	"Orders" : orders.Orders map(object, index) ->
+	(
+		object mapObject(value, key, objIndex) ->
+		(
+			if((key) as String == 'Total')
+				'Total' : orders.Orders[index].Items reduce (item, acc=0) -> acc + item.Income
+			else if((key) as String == 'Items')
+				"Items" : value map(mObject, nIndex) ->
+				{
+					(mObject mapObject(iValue, iKey, iObjectIndex) ->
+				{
+					(if((key) as String == 'UniqueID')
+						'UniqueID' : getUniqueID(object, mObject)
+					else
+						(iKey) : iValue)
+				})
+				}
+			else
+				(key) : value
+		)
+	)
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="mapReduceSingleEntry" doc:id="1d9f346b-0d2c-4a04-98d6-ae3fa5eb2aa5" message="First : #[vars.mapReduceSingleEntry]"/>
+		<logger level="INFO" doc:name="reduceIncomeSum" doc:id="ef0dec93-1eea-44d8-b259-a1054f01e5a8" message="Second : #[vars.reduceIncomeSum]"/>
+		<logger level="INFO" doc:name="mapReducefun" doc:id="910dc825-5121-4843-87bd-1a4ccdab7535" message="Third : #[vars.mapReducefun]"/>
+		<logger level="INFO" doc:name="printTotalValue" doc:id="e8b72a0a-de54-436e-9897-70f8d2ff0b44" message="Print Total : #[vars.printTotalValue]"/>
+		<logger level="INFO" doc:name="complexReduceArray" doc:id="eabee68c-5248-4bf6-8e5f-ac97cdd2090a" message="Complex : #[vars.complexReduceArray]"/>
+	</flow>
+</mule>

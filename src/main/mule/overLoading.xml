@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config2" doc:name="HTTP Listener config" doc:id="ba41adc2-fbe9-4c3c-a00a-a8863c4e4a06" >
+		<http:listener-connection host="0.0.0.0" port="8083" />
+	</http:listener-config>
+	<flow name="overLoadingFlow" doc:id="1064301c-11e1-47ed-90ef-c29311e184e0" >
+		<http:listener doc:name="Listener" doc:id="0dce511a-5f68-46b9-b45a-2fa964617ee1" config-ref="HTTP_Listener_config2" path="/overLoading"/>
+		<ee:transform doc:name="Transform Message" doc:id="60747869-7ff1-43b2-bb26-aef5cd1fda54" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="functionCall" ><![CDATA[%dw 2.0
+output application/json
+import sum as myOwn from mymodules::functions
+fun sum(num1: Number, num2: Number) = num1 + num2 +1
+fun sum(num1: Number, num2: Number, num3: Number) = num1 + num2 +num3
+
+---
+
+	sum(3, 5, 5)]]></ee:set-variable>
+				<ee:set-variable variableName="functionCallinFunction" ><![CDATA[%dw 2.0
+output application/json
+import sum as myOwn from mymodules::functions
+fun sum(num1: Number, num2: Number) = num1 + num2 +1
+fun sum(num1: Number, num2: Number, num3: Number) = num1 + num2 +num3
+fun functional(items: String, myFunction) = myFunction(items)
+---
+
+	functional("Mayur", upper)]]></ee:set-variable>
+				<ee:set-variable variableName="anotherWay" ><![CDATA[%dw 2.0
+output application/json
+import sum as myOwn from mymodules::functions
+fun sum(num1: Number, num2: Number) = num1 + num2 +1
+fun sum(num1: Number, num2: Number, num3: Number) = num1 + num2 +num3
+fun functional(items: String, myFunction) = myFunction(items)
+---
+
+	functional("Mayur", (items) -> items ++ "Patil")]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="functionCallinFunction" doc:id="76d42d42-ab3b-4831-afde-30f97f2ca175" message="functionCallinFunction: #[vars.functionCallinFunction]"/>
+		<logger level="INFO" doc:name="functionCall" doc:id="256e2831-0148-425d-a964-4cd35e86d5a5" message="functionCall: #[vars.functionCall]"/>
+		<logger level="INFO" doc:name="anotherWay" doc:id="bbf2de09-4521-495e-b46b-31094607919b" message="anotherWay : #[vars.anotherWay]"/>
+	</flow>
+</mule>

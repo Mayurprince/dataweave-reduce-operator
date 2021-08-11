@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="1ac2e107-ae6f-40c8-93f2-8c324d94ba59" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<flow name="dataweaveFunctionsFlow" doc:id="1fbe4653-ff2e-4d8f-bdb2-843120fdf20c" >
+		<http:listener doc:name="Listener" doc:id="06e6c55f-3678-4fae-878f-22531d7dc9c9" config-ref="HTTP_Listener_config1" path="/dwFunction"/>
+		<ee:transform doc:name="Multiple Finctions" doc:id="e4611c27-9a7d-4d50-8384-d620ba87937f" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="failIf" ><![CDATA[%dw 2.0
+output application/json
+import * from dw::Runtime
+fun validate(array: Array) = array map (value,index)-> (if((value mod 2)!=0) fail('The number' ++ value ++ 'is not even') else value)
+---
+
+	//validate([4,6,8,1])
+	
+	[4,6,8,1] map(value, index) -> failIf(value,((value)->(value mod 2)!=0),"Error Occured")]]></ee:set-variable>
+				<ee:set-variable variableName="failExample" ><![CDATA[%dw 2.0
+output application/json
+import * from dw::Runtime
+fun validate(array: Array) = array map (value,index)-> (if((value mod 2)!=0) fail('The number' ++ value ++ 'is not even') else value)
+---
+
+	validate([4,6,8,1])]]></ee:set-variable>
+				<ee:set-variable variableName="tryFailIf" ><![CDATA[%dw 2.0
+output application/json
+import * from dw::Runtime
+---
+
+	[4,6,8,1] map(value, index) -> try(()->failIf(value,((value)->(value mod 2)!=0),"Error Occured"))	
+    					     orElseTry(()->failIf(value,((value)->(value mod 3)!=0),"Can't Divided by 3"))
+    					     orElse ('Invalid Number')]]></ee:set-variable>
+				<ee:set-variable variableName="tryWithArray" ><![CDATA[%dw 2.0
+output application/json
+import * from dw::Runtime
+var orders = 
+			{
+					"FirstName" : "Mayur",
+					"Total" : "",
+					"Items" : 
+							{
+								"Education" : "BTech",
+								"Income" : "30000"
+							}						
+			}		
+---
+
+	payload
+	//orders mapObject(value,key,index) -> {
+	//	(if(key as String) == 'Items')
+		//	(key) : (if(try(()-> value map $).success)
+			//	(value)
+			//else
+				//[(value)]				
+//			)
+	//	else
+		//	(key) : value)
+//	}]]></ee:set-variable>
+				<ee:set-variable variableName="sumFunctiondw" ><![CDATA[%dw 2.0
+output application/json
+import sum as myOwn from mymodules::functions
+fun sum(num1: Number, num2: Number) = num1 + num2 +1
+---
+
+	myOwn(3, 5)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="tryFailIf" doc:id="7b156493-96d1-4711-80be-b81cc7bc1565" message="tryFailIf : #[vars.tryFailIf]"/>
+		<logger level="INFO" doc:name="failExample" doc:id="7b9fa27b-464a-4b64-b91c-8ca3767cfb8f" message="failExample : #[vars.failExample]"/>
+		<logger level="INFO" doc:name="failIf" doc:id="39aaa738-1d54-42c7-bd7e-615e634e92ae" message="failIf : #[vars.failIf]"/>
+		<logger level="INFO" doc:name="sumFunctiondw" doc:id="be09897b-5f70-4c62-b64b-a05be139dde0" message="sumFunctiondw : #[vars.sumFunctiondw]"/>
+	</flow>
+</mule>
